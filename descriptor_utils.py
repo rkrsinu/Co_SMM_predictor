@@ -13,26 +13,23 @@ ATOMIC_MAP = {
 
 
 def normalize_atom(atom):
-    """Convert atomic number or symbol to proper element symbol"""
+    """
+    Convert atomic number or symbol to element symbol
+    """
 
     atom = atom.strip()
 
-    # if atomic number
     if atom.isdigit():
-        num = int(atom)
-        return ATOMIC_MAP.get(num, atom)
+        return ATOMIC_MAP.get(int(atom), atom)
 
-    # symbol formatting
-    atom = atom.capitalize()
-
-    return atom
+    return atom.capitalize()
 
 
 def read_xyz(file):
     """
-    Reads xyz files in multiple formats:
+    Reads xyz files in multiple formats
 
-    Format 1:
+    Format 1 (standard xyz):
     N
     comment
     C 0.0 0.0 0.0
@@ -53,7 +50,6 @@ def read_xyz(file):
 
         parts = line.split()
 
-        # must have at least atom + 3 coords
         if len(parts) < 4:
             continue
 
@@ -88,10 +84,23 @@ def angle(a, b, c):
 
 def extract_descriptors(atoms, coords):
 
-    if "Co" not in atoms:
-        raise ValueError("No Co atom found")
+    # ------------------------------
+    # Check cobalt atoms
+    # ------------------------------
 
-    co_index = atoms.index("Co")
+    co_indices = [i for i, a in enumerate(atoms) if a == "Co"]
+
+    if len(co_indices) == 0:
+        raise ValueError(
+            "This predictor is designed only for Co complexes. No Co atom was found."
+        )
+
+    if len(co_indices) > 1:
+        raise ValueError(
+            "Multiple Co atoms detected. Please provide a structure containing only one Co center."
+        )
+
+    co_index = co_indices[0]
     co_coord = coords[co_index]
 
     candidates = []
@@ -103,20 +112,26 @@ def extract_descriptors(atoms, coords):
 
         d = distance(co_coord, coord)
 
+        # ------------------------------
         # Hydrogen rule
+        # ------------------------------
         if atom == "H":
 
             if 1.4 <= d <= 1.9:
                 candidates.append((atom, i, d))
 
+        # ------------------------------
         # Other atoms
+        # ------------------------------
         else:
 
             if 1.6 <= d <= 2.875:
                 candidates.append((atom, i, d))
 
     if len(candidates) < 3:
-        raise ValueError("Less than 3 donor atoms detected")
+        raise ValueError(
+            "Less than 3 donor atoms detected within the allowed bond distance."
+        )
 
     # sort by distance
     candidates = sorted(candidates, key=lambda x: x[2])
