@@ -81,6 +81,12 @@ if uploaded_file is not None:
 
         st.table(results)
 
+        # Citation / paper link
+        st.markdown(
+            "For more details, visit: "
+            "[https://doi.org/10.26434/chemrxiv-2024-97555](https://doi.org/10.26434/chemrxiv-2024-97555)"
+        )
+
     except Exception as e:
 
         st.error(f"Error processing structure: {e}")
