@@ -13,9 +13,6 @@ ATOMIC_MAP = {
 
 
 def normalize_atom(atom):
-    """
-    Convert atomic number or symbol to element symbol
-    """
 
     atom = atom.strip()
 
@@ -26,20 +23,6 @@ def normalize_atom(atom):
 
 
 def read_xyz(file):
-    """
-    Reads xyz files in multiple formats
-
-    Format 1 (standard xyz):
-    N
-    comment
-    C 0.0 0.0 0.0
-
-    Format 2:
-    C 0.0 0.0 0.0
-
-    Format 3:
-    6 0.0 0.0 0.0
-    """
 
     lines = file.read().decode().splitlines()
 
@@ -69,6 +52,7 @@ def read_xyz(file):
 
 
 def distance(a, b):
+
     return np.linalg.norm(a - b)
 
 
@@ -82,22 +66,59 @@ def angle(a, b, c):
     return np.degrees(np.arccos(cosang))
 
 
+def filter_angles(candidates, coords, co_coord):
+
+    """
+    Remove atoms that produce L–Co–L angles < 60°
+    The atom farther from Co will be discarded
+    """
+
+    changed = True
+
+    while changed and len(candidates) > 3:
+
+        changed = False
+
+        for i, j in combinations(range(len(candidates)), 2):
+
+            idx_i = candidates[i][1]
+            idx_j = candidates[j][1]
+
+            ang = angle(coords[idx_i], co_coord, coords[idx_j])
+
+            if ang < 60:
+
+                # discard atom farther from Co
+                if candidates[i][2] > candidates[j][2]:
+                    del candidates[i]
+                else:
+                    del candidates[j]
+
+                changed = True
+                break
+
+        if changed:
+            break
+
+    return candidates
+
+
 def extract_descriptors(atoms, coords):
 
     # ------------------------------
-    # Check cobalt atoms
+    # Check Co
     # ------------------------------
 
     co_indices = [i for i, a in enumerate(atoms) if a == "Co"]
 
     if len(co_indices) == 0:
         raise ValueError(
-            "This predictor is designed only for Co complexes. No Co atom was found."
+            "This predictor works only for Co complexes. No Co atom found."
         )
 
     if len(co_indices) > 1:
         raise ValueError(
-            "Multiple Co atoms detected. Please provide a structure containing only one Co center."
+            "Multiple Co atoms detected. Provide a structure with only one Co."
         )
 
     co_index = co_indices[0]
@@ -112,17 +133,12 @@ def extract_descriptors(atoms, coords):
 
         d = distance(co_coord, coord)
 
-        # ------------------------------
         # Hydrogen rule
-        # ------------------------------
         if atom == "H":
 
             if 1.4 <= d <= 1.9:
                 candidates.append((atom, i, d))
 
-        # ------------------------------
-        # Other atoms
-        # ------------------------------
         else:
 
             if 1.6 <= d <= 2.875:
@@ -130,13 +146,21 @@ def extract_descriptors(atoms, coords):
 
     if len(candidates) < 3:
         raise ValueError(
-            "Less than 3 donor atoms detected within the allowed bond distance."
+            "Less than 3 donor atoms detected within bonding distance."
         )
 
     # sort by distance
     candidates = sorted(candidates, key=lambda x: x[2])
 
-    # take 3 closest donors
+    # apply angle filtering
+    candidates = filter_angles(candidates, coords, co_coord)
+
+    if len(candidates) < 3:
+        raise ValueError(
+            "Unable to determine 3 valid donors after angle filtering."
+        )
+
+    # take first 3
     candidates = candidates[:3]
 
     bond_lengths = [c[2] for c in candidates]
