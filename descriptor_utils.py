@@ -4,15 +4,47 @@ from itertools import combinations
 # allowed donor atoms
 DONORS = ["N","O","S","P","Cl","Br","I","F"]
 
+# atomic number mapping
+ATOMIC_NUMBERS = {
+"H":1,"C":6,"N":7,"O":8,"F":9,
+"P":15,"S":16,"Cl":17,
+"Br":35,"I":53,
+"Co":27
+}
+
+
+def normalize_atom(atom):
+    """Convert atomic number to element symbol"""
+
+    atom = atom.strip()
+
+    # if atomic number
+    if atom.isdigit():
+        num = int(atom)
+        for k,v in ATOMIC_NUMBERS.items():
+            if v == num:
+                return k
+        return atom
+
+    # normalize case
+    return atom.capitalize()
+
+
 def read_xyz(file):
 
     lines = file.read().decode().splitlines()
+
     atoms = []
     coords = []
 
     for line in lines[2:]:
+
         parts = line.split()
-        atoms.append(parts[0])
+
+        atom = normalize_atom(parts[0])
+
+        atoms.append(atom)
+
         coords.append(list(map(float, parts[1:4])))
 
     return atoms, np.array(coords)
@@ -28,6 +60,7 @@ def angle(a,b,c):
     bc = c-b
 
     cosang = np.dot(ba,bc)/(np.linalg.norm(ba)*np.linalg.norm(bc))
+
     return np.degrees(np.arccos(cosang))
 
 
@@ -57,8 +90,6 @@ def extract_descriptors(atoms,coords):
 
                 if d <= 1.9:
                     candidates.append((atom,i,d))
-                else:
-                    continue
 
             else:
                 candidates.append((atom,i,d))
@@ -80,7 +111,6 @@ def extract_descriptors(atoms,coords):
 
     BL = sorted(bond_lengths)
 
-    # angles
     angles = []
 
     for i,j in combinations(donor_indices,2):
