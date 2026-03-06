@@ -2,7 +2,6 @@ import numpy as np
 from itertools import combinations
 
 
-# Atomic number → element symbol
 ATOMIC_MAP = {
 1:"H",2:"He",3:"Li",4:"Be",5:"B",6:"C",7:"N",8:"O",9:"F",10:"Ne",
 11:"Na",12:"Mg",13:"Al",14:"Si",15:"P",16:"S",17:"Cl",18:"Ar",
@@ -52,136 +51,75 @@ def read_xyz(file):
 
 
 def distance(a, b):
+    return np.linalg.norm(a-b)
 
-    return np.linalg.norm(a - b)
 
+def angle(a,b,c):
 
-def angle(a, b, c):
+    ba = a-b
+    bc = c-b
 
-    ba = a - b
-    bc = c - b
-
-    cosang = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+    cosang = np.dot(ba,bc)/(np.linalg.norm(ba)*np.linalg.norm(bc))
 
     return np.degrees(np.arccos(cosang))
 
 
-def filter_angles(candidates, coords, co_coord):
+def find_donors(atoms,coords):
 
-    """
-    Remove atoms that produce L–Co–L angles < 60°
-    The atom farther from Co will be discarded
-    """
+    co_indices = [i for i,a in enumerate(atoms) if a=="Co"]
 
-    changed = True
+    if len(co_indices)==0:
+        raise ValueError("This tool works only for Co complexes.")
 
-    while changed and len(candidates) > 3:
-
-        changed = False
-
-        for i, j in combinations(range(len(candidates)), 2):
-
-            idx_i = candidates[i][1]
-            idx_j = candidates[j][1]
-
-            ang = angle(coords[idx_i], co_coord, coords[idx_j])
-
-            if ang < 60:
-
-                # discard atom farther from Co
-                if candidates[i][2] > candidates[j][2]:
-                    del candidates[i]
-                else:
-                    del candidates[j]
-
-                changed = True
-                break
-
-        if changed:
-            break
-
-    return candidates
-
-
-def extract_descriptors(atoms, coords):
-
-    # ------------------------------
-    # Check Co
-    # ------------------------------
-
-    co_indices = [i for i, a in enumerate(atoms) if a == "Co"]
-
-    if len(co_indices) == 0:
-        raise ValueError(
-            "This predictor works only for Co complexes. No Co atom found."
-        )
-
-    if len(co_indices) > 1:
-        raise ValueError(
-            "Multiple Co atoms detected. Provide a structure with only one Co."
-        )
+    if len(co_indices)>1:
+        raise ValueError("Multiple Co atoms detected.")
 
     co_index = co_indices[0]
     co_coord = coords[co_index]
 
-    candidates = []
+    candidates=[]
 
-    for i, (atom, coord) in enumerate(zip(atoms, coords)):
+    for i,(atom,coord) in enumerate(zip(atoms,coords)):
 
-        if i == co_index:
+        if i==co_index:
             continue
 
-        d = distance(co_coord, coord)
+        d = distance(co_coord,coord)
 
-        # Hydrogen rule
-        if atom == "H":
+        if atom=="H":
 
-            if 1.4 <= d <= 1.9:
-                candidates.append((atom, i, d))
+            if 1.4<=d<=1.9:
+                candidates.append((i,d))
 
         else:
 
-            if 1.6 <= d <= 2.875:
-                candidates.append((atom, i, d))
+            if 1.6<=d<=2.875:
+                candidates.append((i,d))
 
-    if len(candidates) < 3:
-        raise ValueError(
-            "Less than 3 donor atoms detected within bonding distance."
-        )
+    candidates = sorted(candidates,key=lambda x:x[1])
 
-    # sort by distance
-    candidates = sorted(candidates, key=lambda x: x[2])
+    donors = candidates[:3]
 
-    # apply angle filtering
-    candidates = filter_angles(candidates, coords, co_coord)
+    return co_index, donors
 
-    if len(candidates) < 3:
-        raise ValueError(
-            "Unable to determine 3 valid donors after angle filtering."
-        )
 
-    # take first 3
-    candidates = candidates[:3]
+def compute_descriptors(coords,co_index,donor_indices):
 
-    bond_lengths = [c[2] for c in candidates]
-    donor_indices = [c[1] for c in candidates]
+    co = coords[co_index]
 
-    BL = sorted(bond_lengths)
+    BL=[]
+    for i in donor_indices:
+        BL.append(distance(co,coords[i]))
 
-    angles = []
+    BL_sorted = sorted(BL)
 
-    for i, j in combinations(donor_indices, 2):
+    angles=[]
 
-        ang = angle(coords[i], co_coord, coords[j])
+    for i,j in combinations(donor_indices,2):
+
+        ang = angle(coords[i],co,coords[j])
         angles.append(ang)
 
-    BA = sorted(angles)
+    BA_sorted = sorted(angles)
 
-    return {
-        "BL1": BL[0],
-        "BL2": BL[1],
-        "BL3": BL[2],
-        "BA1": BA[0],
-        "BA2": BA[1],
-        "BA3": BA[2]
-    }
+    return BL_sorted, BA_sorted
