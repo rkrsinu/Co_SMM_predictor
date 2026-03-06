@@ -2,6 +2,7 @@ import numpy as np
 from itertools import combinations
 
 
+# atomic number → element
 ATOMIC_MAP = {
 1:"H",2:"He",3:"Li",4:"Be",5:"B",6:"C",7:"N",8:"O",9:"F",10:"Ne",
 11:"Na",12:"Mg",13:"Al",14:"Si",15:"P",16:"S",17:"Cl",18:"Ar",
@@ -45,12 +46,12 @@ def read_xyz(file):
             continue
 
         atoms.append(atom)
-        coords.append([x, y, z])
+        coords.append([x,y,z])
 
     return atoms, np.array(coords)
 
 
-def distance(a, b):
+def distance(a,b):
     return np.linalg.norm(a-b)
 
 
@@ -66,13 +67,27 @@ def angle(a,b,c):
 
 def find_donors(atoms,coords):
 
+    METALS = [
+        "Sc","Ti","V","Cr","Mn","Fe","Co","Ni","Cu","Zn",
+        "Y","Zr","Nb","Mo","Ru","Rh","Pd","Ag","Cd",
+        "La","Ce","Pr","Nd","Sm","Eu","Gd","Tb","Dy"
+    ]
+
+    metals = [a for a in atoms if a in METALS]
+
     co_indices = [i for i,a in enumerate(atoms) if a=="Co"]
 
-    if len(co_indices)==0:
-        raise ValueError("This tool works only for Co complexes.")
+    # ---- validation ----
 
-    if len(co_indices)>1:
-        raise ValueError("Multiple Co atoms detected.")
+    if len(co_indices)!=1 or len(metals)!=1:
+
+        message = (
+        "⚠️ This predictor is designed only for "
+        "mononuclear three-coordinate Co complexes. "
+        "Please upload a structure containing only one Co center."
+        )
+
+        return None,None,message
 
     co_index = co_indices[0]
     co_coord = coords[co_index]
@@ -96,11 +111,15 @@ def find_donors(atoms,coords):
             if 1.6<=d<=2.875:
                 candidates.append((i,d))
 
+    if len(candidates)<3:
+
+        return None,None,"⚠️ Unable to detect three donor atoms around Co."
+
     candidates = sorted(candidates,key=lambda x:x[1])
 
     donors = candidates[:3]
 
-    return co_index, donors
+    return co_index, donors, None
 
 
 def compute_descriptors(coords,co_index,donor_indices):
@@ -108,6 +127,7 @@ def compute_descriptors(coords,co_index,donor_indices):
     co = coords[co_index]
 
     BL=[]
+
     for i in donor_indices:
         BL.append(distance(co,coords[i]))
 
