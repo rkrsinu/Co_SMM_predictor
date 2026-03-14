@@ -9,10 +9,10 @@ st.set_page_config(page_title="Co Magnetic Predictor", layout="centered")
 st.title("Co(II) Magnetic Property Predictor")
 
 ERR_D = 12.5
-ERR_ED = 0.02
-ERR_gx = 0.04
-ERR_gy = 0.05
-ERR_gz = 0.06
+ERR_ED = 0.05
+ERR_gx = 0.08
+ERR_gy = 0.09
+ERR_gz = 0.1
 
 uploaded_file = st.file_uploader("Upload XYZ file", type=["xyz"])
 
