@@ -5,128 +5,235 @@ import pandas as pd
 
 from descriptor_utils import read_xyz, find_donors, compute_descriptors
 
-st.set_page_config(page_title="Co Magnetic Predictor", layout="centered")
-st.title("Three Coordinate Co(II) Magnetic Anisotropy Predictor")
+# --------------------------------------------------
+
+# Page configuration
+
+# --------------------------------------------------
+
+st.set_page_config(
+page_title="Co Magnetic Predictor",
+layout="centered",
+page_icon="🧲"
+)
+
+# --------------------------------------------------
+
+# Custom CSS styling
+
+# --------------------------------------------------
+
+st.markdown("""
+
+<style>
+
+.main-title{
+    font-size:36px;
+    font-weight:700;
+    color:white;
+    text-align:center;
+    padding:15px;
+    border-radius:10px;
+    background: linear-gradient(90deg,#3a7bd5,#00d2ff);
+}
+
+.section-box{
+    background-color:#f6f9ff;
+    padding:15px;
+    border-radius:10px;
+    border:1px solid #e0e6ff;
+}
+
+.result-box{
+    background-color:#e8fff0;
+    padding:15px;
+    border-radius:10px;
+    border:1px solid #8ee3b0;
+}
+
+</style>
+
+""", unsafe_allow_html=True)
+
+# --------------------------------------------------
+
+# Title
+
+# --------------------------------------------------
+
+st.markdown(
+'<div class="main-title">Three Coordinate Co(II) Magnetic Anisotropy Predictor</div>',
+unsafe_allow_html=True
+)
+
+st.write("")
+
+# --------------------------------------------------
+
+# Model uncertainties
+
+# --------------------------------------------------
 
 ERR_D = 12.5
 ERR_ED = 0.05
 ERR_gx = 0.08
 ERR_gy = 0.09
-ERR_gz = 0.1
+ERR_gz = 0.10
+
+# --------------------------------------------------
+
+# Upload file
+
+# --------------------------------------------------
+
+st.markdown("### 📂 Upload Structure")
 
 uploaded_file = st.file_uploader("Upload XYZ file", type=["xyz"])
 
 if uploaded_file is not None:
 
-    atoms, coords = read_xyz(uploaded_file)
+```
+atoms, coords = read_xyz(uploaded_file)
 
-    co_index, donors, message = find_donors(atoms, coords)
+co_index, donors, message = find_donors(atoms, coords)
 
-    if message:
-        st.warning(message)
-        st.stop()
+if message:
+    st.warning(message)
+    st.stop()
 
-    donor_indices = [d[0] for d in donors]
+donor_indices = [d[0] for d in donors]
 
-    BL, BA = compute_descriptors(coords, co_index, donor_indices)
+BL, BA = compute_descriptors(coords, co_index, donor_indices)
 
-    st.subheader("Detected donor atoms")
 
-    donor_table = []
+# --------------------------------------------------
+# Detected donors
+# --------------------------------------------------
+st.markdown("### 🧪 Detected Donor Atoms")
 
-    for i, d in enumerate(donor_indices):
-        donor_table.append({
-            "Donor atom index": d + 1,
-            "Atom": atoms[d],
-            "Co–L bond length (Å)": round(BL[i], 3)
-        })
+donor_table = []
 
-    st.table(pd.DataFrame(donor_table))
+for i, d in enumerate(donor_indices):
 
-    confirm = st.radio(
-        "Are these donor atoms correct?",
-        ["Yes", "No"],
-        index=None
+    donor_table.append({
+        "Donor atom index": d + 1,
+        "Atom": atoms[d],
+        "Co–L bond length (Å)": round(BL[i], 3)
+    })
+
+df = pd.DataFrame(donor_table)
+
+st.dataframe(
+    df,
+    use_container_width=True
+)
+
+
+# --------------------------------------------------
+# Confirmation
+# --------------------------------------------------
+st.markdown("### ✔ Confirm Donor Atoms")
+
+confirm = st.radio(
+    "Are these donor atoms correct?",
+    ["Yes", "No"],
+    index=None
+)
+
+run_prediction = False
+
+
+if confirm == "Yes":
+    run_prediction = True
+
+
+elif confirm == "No":
+
+    manual = st.text_input(
+        "Enter donor atom indices separated by comma (example: 12,34,56)"
     )
 
-    run_prediction = False
+    if manual:
 
-    if confirm == "Yes":
-        run_prediction = True
+        try:
 
-    elif confirm == "No":
+            donor_indices = [int(x.strip()) - 1 for x in manual.split(",")]
 
-        manual = st.text_input(
-            "Enter donor atom indices separated by comma (example: 12,34,56)"
-        )
+            BL, BA = compute_descriptors(coords, co_index, donor_indices)
 
-        if manual:
+            st.markdown("### 🔄 Updated Donor Atoms")
 
-            try:
+            donor_table = []
 
-                donor_indices = [int(x.strip()) - 1 for x in manual.split(",")]
+            for i, d in enumerate(donor_indices):
 
-                BL, BA = compute_descriptors(coords, co_index, donor_indices)
+                donor_table.append({
+                    "Donor atom index": d + 1,
+                    "Atom": atoms[d],
+                    "Co–L bond length (Å)": round(BL[i], 3)
+                })
 
-                st.subheader("Updated donor atoms")
+            st.dataframe(pd.DataFrame(donor_table), use_container_width=True)
 
-                donor_table = []
+            confirm2 = st.radio(
+                "Proceed with prediction?",
+                ["Yes", "No"],
+                index=None
+            )
 
-                for i, d in enumerate(donor_indices):
-                    donor_table.append({
-                        "Donor atom index": d + 1,
-                        "Atom": atoms[d],
-                        "Co–L bond length (Å)": round(BL[i], 3)
-                    })
+            if confirm2 == "Yes":
+                run_prediction = True
 
-                st.table(pd.DataFrame(donor_table))
+        except:
+            st.error("Invalid atom indices. Please enter valid numbers.")
 
-                confirm2 = st.radio(
-                    "Proceed with prediction?",
-                    ["Yes", "No"],
-                    index=None
-                )
 
-                if confirm2 == "Yes":
-                    run_prediction = True
+# --------------------------------------------------
+# Run prediction
+# --------------------------------------------------
+if run_prediction:
 
-            except:
-                st.error("Invalid atom indices. Please enter valid numbers.")
+    X = np.array([[BL[0], BL[1], BL[2], BA[0], BA[1], BA[2]]])
 
-    if run_prediction:
+    model_D = joblib.load("models/GB_model_D.joblib")
+    model_ED = joblib.load("models/GB_model_E_D.joblib")
+    model_gx = joblib.load("models/GB_model_gx.joblib")
+    model_gy = joblib.load("models/GB_model_gy.joblib")
+    model_gz = joblib.load("models/GB_model_gz.joblib")
 
-        X = np.array([[BL[0], BL[1], BL[2], BA[0], BA[1], BA[2]]])
+    D = model_D.predict(X)[0]
+    ED = model_ED.predict(X)[0]
+    gx = model_gx.predict(X)[0]
+    gy = model_gy.predict(X)[0]
+    gz = model_gz.predict(X)[0]
 
-        model_D = joblib.load("models/GB_model_D.joblib")
-        model_ED = joblib.load("models/GB_model_E_D.joblib")
-        model_gx = joblib.load("models/GB_model_gx.joblib")
-        model_gy = joblib.load("models/GB_model_gy.joblib")
-        model_gz = joblib.load("models/GB_model_gz.joblib")
 
-        D = model_D.predict(X)[0]
-        ED = model_ED.predict(X)[0]
-        gx = model_gx.predict(X)[0]
-        gy = model_gy.predict(X)[0]
-        gz = model_gz.predict(X)[0]
+    # --------------------------------------------------
+    # Results
+    # --------------------------------------------------
+    st.markdown("### 🧲 Predicted Magnetic Parameters")
 
-        st.subheader("Predicted Magnetic Parameters")
+    results = pd.DataFrame({
 
-        results = pd.DataFrame({
-            "Parameter": ["D", "E/D", "gx", "gy", "gz"],
-            "Prediction": [
-                f"{round(D,3)} ± {ERR_D}",
-                f"{round(ED,4)} ± {ERR_ED}",
-                f"{round(gx,3)} ± {ERR_gx}",
-                f"{round(gy,3)} ± {ERR_gy}",
-                f"{round(gz,3)} ± {ERR_gz}"
-            ]
-        })
+        "Parameter": ["D", "E/D", "gx", "gy", "gz"],
 
-        st.table(results)
+        "Prediction": [
+            f"{round(D,3)} ± {ERR_D}",
+            f"{round(ED,4)} ± {ERR_ED}",
+            f"{round(gx,3)} ± {ERR_gx}",
+            f"{round(gy,3)} ± {ERR_gy}",
+            f"{round(gz,3)} ± {ERR_gz}"
+        ]
+    })
 
-        st.caption("Prediction uncertainty corresponds to model MAE on the test dataset.")
+    st.success("Prediction completed successfully!")
 
-        st.markdown(
-            "For more details visit: "
-            "[https://doi.org/10.26434/chemrxiv-2024-97555](https://doi.org/10.26434/chemrxiv-2024-97555)"
-        )
+    st.dataframe(results, use_container_width=True)
+
+    st.caption("Prediction uncertainty corresponds to model MAE on the test dataset.")
+
+    st.markdown(
+        "📄 For more details visit: "
+        "[ChemRxiv DOI](https://doi.org/10.26434/chemrxiv-2024-97555)"
+    )
+```
