@@ -17,9 +17,9 @@ st.title("Co(II) Magnetic Property Predictor")
 
 # --------------------------------------------------
 
-# Model prediction uncertainties (MAE)
+# Model prediction uncertainties (MAE values)
 
-# Replace with actual MAE values from model testing
+# Replace with your real MAE values from testing
 
 # --------------------------------------------------
 
@@ -54,13 +54,14 @@ BL, BA = compute_descriptors(coords, co_index, donor_indices)
 
 
 # --------------------------------------------------
-# Show detected donor atoms
+# Display detected donors
 # --------------------------------------------------
 st.subheader("Detected donor atoms")
 
 donor_table = []
 
 for i, d in enumerate(donor_indices):
+
     donor_table.append({
         "Donor atom index": d + 1,
         "Atom": atoms[d],
@@ -71,7 +72,7 @@ st.table(pd.DataFrame(donor_table))
 
 
 # --------------------------------------------------
-# Confirm donors
+# Ask user confirmation
 # --------------------------------------------------
 confirm = st.radio(
     "Are these donor atoms correct?",
@@ -111,6 +112,7 @@ elif confirm == "No":
             donor_table = []
 
             for i, d in enumerate(donor_indices):
+
                 donor_table.append({
                     "Donor atom index": d + 1,
                     "Atom": atoms[d],
@@ -153,14 +155,12 @@ if run_prediction:
 
 
     # --------------------------------------------------
-    # Show predictions with ± error
+    # Display predictions with ± uncertainty
     # --------------------------------------------------
     st.subheader("Predicted Magnetic Parameters")
 
     results = pd.DataFrame({
-
         "Parameter": ["D", "E/D", "gx", "gy", "gz"],
-
         "Prediction": [
             f"{round(D,3)} ± {ERR_D}",
             f"{round(ED,4)} ± {ERR_ED}",
@@ -168,14 +168,11 @@ if run_prediction:
             f"{round(gy,3)} ± {ERR_gy}",
             f"{round(gz,3)} ± {ERR_gz}"
         ]
-
     })
 
     st.table(results)
 
-    st.caption(
-        "Prediction uncertainty corresponds to model MAE on the test dataset."
-    )
+    st.caption("Prediction uncertainty corresponds to model MAE on the test dataset.")
 
     st.markdown(
         "For more details visit: "
