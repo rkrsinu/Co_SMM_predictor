@@ -19,7 +19,7 @@ st.title("Co(II) Magnetic Property Predictor")
 
 # Model prediction uncertainties (MAE)
 
-# Replace with actual MAE from your model training
+# Replace with actual MAE values from model testing
 
 # --------------------------------------------------
 
@@ -54,14 +54,13 @@ BL, BA = compute_descriptors(coords, co_index, donor_indices)
 
 
 # --------------------------------------------------
-# Display detected donors
+# Show detected donor atoms
 # --------------------------------------------------
 st.subheader("Detected donor atoms")
 
 donor_table = []
 
 for i, d in enumerate(donor_indices):
-
     donor_table.append({
         "Donor atom index": d + 1,
         "Atom": atoms[d],
@@ -72,7 +71,7 @@ st.table(pd.DataFrame(donor_table))
 
 
 # --------------------------------------------------
-# User confirmation
+# Confirm donors
 # --------------------------------------------------
 confirm = st.radio(
     "Are these donor atoms correct?",
@@ -84,15 +83,14 @@ run_prediction = False
 
 
 # --------------------------------------------------
-# If detected donors are correct
+# If donors are correct
 # --------------------------------------------------
 if confirm == "Yes":
-
     run_prediction = True
 
 
 # --------------------------------------------------
-# If detected donors are incorrect
+# If donors are incorrect
 # --------------------------------------------------
 elif confirm == "No":
 
@@ -113,7 +111,6 @@ elif confirm == "No":
             donor_table = []
 
             for i, d in enumerate(donor_indices):
-
                 donor_table.append({
                     "Donor atom index": d + 1,
                     "Atom": atoms[d],
@@ -136,19 +133,17 @@ elif confirm == "No":
 
 
 # --------------------------------------------------
-# Run prediction only after confirmation
+# Run prediction
 # --------------------------------------------------
 if run_prediction:
 
     X = np.array([[BL[0], BL[1], BL[2], BA[0], BA[1], BA[2]]])
-
 
     model_D = joblib.load("models/GB_model_D.joblib")
     model_ED = joblib.load("models/GB_model_E_D.joblib")
     model_gx = joblib.load("models/GB_model_gx.joblib")
     model_gy = joblib.load("models/GB_model_gy.joblib")
     model_gz = joblib.load("models/GB_model_gz.joblib")
-
 
     D = model_D.predict(X)[0]
     ED = model_ED.predict(X)[0]
@@ -158,7 +153,7 @@ if run_prediction:
 
 
     # --------------------------------------------------
-    # Show predicted parameters with ± error
+    # Show predictions with ± error
     # --------------------------------------------------
     st.subheader("Predicted Magnetic Parameters")
 
@@ -178,11 +173,9 @@ if run_prediction:
 
     st.table(results)
 
-
     st.caption(
         "Prediction uncertainty corresponds to model MAE on the test dataset."
     )
-
 
     st.markdown(
         "For more details visit: "
