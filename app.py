@@ -5,88 +5,17 @@ import pandas as pd
 
 from descriptor_utils import read_xyz, find_donors, compute_descriptors
 
+st.set_page_config(page_title="Co Magnetic Predictor", layout="centered")
+st.title("Three Coordinate Co(II) Magnetic Anisotropy Predictor")
 
-# ------------------------------------------------------------
-# PAGE SETTINGS
-# ------------------------------------------------------------
-st.set_page_config(
-    page_title="Co Magnetic Predictor",
-    page_icon="🧲",
-    layout="centered"
-)
-
-# ------------------------------------------------------------
-# CUSTOM COLOR STYLE
-# ------------------------------------------------------------
-st.markdown("""
-<style>
-
-.main-title{
-    font-size:40px;
-    font-weight:700;
-    color:#0e76a8;
-}
-
-.section{
-    font-size:24px;
-    font-weight:600;
-    color:#ff4b4b;
-    margin-top:20px;
-}
-
-.result-card{
-    background-color:#f0f7ff;
-    padding:20px;
-    border-radius:10px;
-    border:1px solid #c9e2ff;
-    margin-bottom:10px;
-}
-
-.stButton>button {
-    background-color:#0e76a8;
-    color:white;
-    border-radius:8px;
-    height:3em;
-    width:100%;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-
-# ------------------------------------------------------------
-# TITLE
-# ------------------------------------------------------------
-st.markdown(
-    '<p class="main-title">🧲 Three-Coordinate Co(II) Magnetic Anisotropy Predictor</p>',
-    unsafe_allow_html=True
-)
-
-
-# ------------------------------------------------------------
-# MODEL ERRORS
-# ------------------------------------------------------------
 ERR_D = 12.5
 ERR_ED = 0.05
 ERR_gx = 0.08
 ERR_gy = 0.09
 ERR_gz = 0.1
 
+uploaded_file = st.file_uploader("Upload XYZ file", type=["xyz"])
 
-# ------------------------------------------------------------
-# FILE UPLOAD
-# ------------------------------------------------------------
-st.markdown('<p class="section">Upload Structure</p>', unsafe_allow_html=True)
-
-uploaded_file = st.file_uploader(
-    "Upload XYZ file of the complex",
-    type=["xyz"]
-)
-
-
-# ------------------------------------------------------------
-# MAIN LOGIC
-# ------------------------------------------------------------
 if uploaded_file is not None:
 
     atoms, coords = read_xyz(uploaded_file)
@@ -101,27 +30,19 @@ if uploaded_file is not None:
 
     BL, BA = compute_descriptors(coords, co_index, donor_indices)
 
-
-    # --------------------------------------------------------
-    # DONOR TABLE
-    # --------------------------------------------------------
-    st.markdown('<p class="section">Detected Donor Atoms</p>', unsafe_allow_html=True)
+    st.subheader("Detected donor atoms")
 
     donor_table = []
 
     for i, d in enumerate(donor_indices):
         donor_table.append({
-            "Donor Atom Index": d + 1,
+            "Donor atom index": d + 1,
             "Atom": atoms[d],
-            "Co–L Bond Length (Å)": round(BL[i], 3)
+            "Co–L bond length (Å)": round(BL[i], 3)
         })
 
-    st.dataframe(pd.DataFrame(donor_table), use_container_width=True)
+    st.table(pd.DataFrame(donor_table))
 
-
-    # --------------------------------------------------------
-    # CONFIRMATION
-    # --------------------------------------------------------
     confirm = st.radio(
         "Are these donor atoms correct?",
         ["Yes", "No"],
@@ -130,17 +51,9 @@ if uploaded_file is not None:
 
     run_prediction = False
 
-
-    # --------------------------------------------------------
-    # AUTO MODE
-    # --------------------------------------------------------
     if confirm == "Yes":
         run_prediction = True
 
-
-    # --------------------------------------------------------
-    # MANUAL MODE
-    # --------------------------------------------------------
     elif confirm == "No":
 
         manual = st.text_input(
@@ -155,18 +68,18 @@ if uploaded_file is not None:
 
                 BL, BA = compute_descriptors(coords, co_index, donor_indices)
 
-                st.markdown('<p class="section">Updated Donor Atoms</p>', unsafe_allow_html=True)
+                st.subheader("Updated donor atoms")
 
                 donor_table = []
 
                 for i, d in enumerate(donor_indices):
                     donor_table.append({
-                        "Donor Atom Index": d + 1,
+                        "Donor atom index": d + 1,
                         "Atom": atoms[d],
-                        "Co–L Bond Length (Å)": round(BL[i], 3)
+                        "Co–L bond length (Å)": round(BL[i], 3)
                     })
 
-                st.dataframe(pd.DataFrame(donor_table), use_container_width=True)
+                st.table(pd.DataFrame(donor_table))
 
                 confirm2 = st.radio(
                     "Proceed with prediction?",
@@ -180,10 +93,6 @@ if uploaded_file is not None:
             except:
                 st.error("Invalid atom indices. Please enter valid numbers.")
 
-
-    # --------------------------------------------------------
-    # PREDICTION
-    # --------------------------------------------------------
     if run_prediction:
 
         X = np.array([[BL[0], BL[1], BL[2], BA[0], BA[1], BA[2]]])
@@ -200,30 +109,24 @@ if uploaded_file is not None:
         gy = model_gy.predict(X)[0]
         gz = model_gz.predict(X)[0]
 
+        st.subheader("Predicted Magnetic Parameters")
 
-        # ----------------------------------------------------
-        # RESULTS
-        # ----------------------------------------------------
-        st.markdown('<p class="section">Predicted Magnetic Parameters</p>', unsafe_allow_html=True)
+        results = pd.DataFrame({
+            "Parameter": ["D", "E/D", "gx", "gy", "gz"],
+            "Prediction": [
+                f"{round(D,3)} ± {ERR_D}",
+                f"{round(ED,4)} ± {ERR_ED}",
+                f"{round(gx,3)} ± {ERR_gx}",
+                f"{round(gy,3)} ± {ERR_gy}",
+                f"{round(gz,3)} ± {ERR_gz}"
+            ]
+        })
 
+        st.table(results)
 
-        col1, col2, col3 = st.columns(3)
-
-        col1.metric("D", f"{round(D,3)}", f"± {ERR_D}")
-        col2.metric("E/D", f"{round(ED,4)}", f"± {ERR_ED}")
-        col3.metric("gx", f"{round(gx,3)}", f"± {ERR_gx}")
-
-        col4, col5 = st.columns(2)
-
-        col4.metric("gy", f"{round(gy,3)}", f"± {ERR_gy}")
-        col5.metric("gz", f"{round(gz,3)}", f"± {ERR_gz}")
-
-
-        st.caption(
-            "Prediction uncertainty corresponds to model MAE on the test dataset."
-        )
+        st.caption("Prediction uncertainty corresponds to model MAE on the test dataset.")
 
         st.markdown(
-            "🔗 **Reference:** "
-            "[ChemRxiv DOI](https://doi.org/10.26434/chemrxiv-2024-97555)"
+            "For more details visit: "
+            "[https://doi.org/10.26434/chemrxiv-2024-97555](https://doi.org/10.26434/chemrxiv-2024-97555)"
         )
