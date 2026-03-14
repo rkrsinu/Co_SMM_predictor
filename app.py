@@ -6,7 +6,7 @@ import pandas as pd
 from descriptor_utils import read_xyz, find_donors, compute_descriptors
 
 st.set_page_config(page_title="Co Magnetic Predictor", layout="centered")
-st.title("Three Coordinate Co(II) Magnetic Property Predictor")
+st.title("Three Coordinate Co(II) Magnetic Anisotropy Predictor")
 
 ERR_D = 12.5
 ERR_ED = 0.05
