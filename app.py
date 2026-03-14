@@ -2,7 +2,6 @@ import streamlit as st
 import numpy as np
 import joblib
 import pandas as pd
-
 from descriptor_utils import read_xyz, find_donors, compute_descriptors
 
 # --------------------------------------------------
@@ -11,22 +10,17 @@ from descriptor_utils import read_xyz, find_donors, compute_descriptors
 
 # --------------------------------------------------
 
-st.set_page_config(
-page_title="Co Magnetic Predictor",
-layout="centered",
-page_icon="🧲"
-)
+st.set_page_config(page_title="Co Magnetic Predictor", layout="centered", page_icon="🧲")
 
 # --------------------------------------------------
 
-# Custom CSS styling
+# Custom styling
 
 # --------------------------------------------------
 
 st.markdown("""
 
 <style>
-
 .title-box{
     background: linear-gradient(90deg,#3a7bd5,#00d2ff);
     padding:18px;
@@ -36,7 +30,6 @@ st.markdown("""
     font-size:32px;
     font-weight:700;
 }
-
 .section{
     background-color:#f7f9ff;
     padding:15px;
@@ -44,7 +37,6 @@ st.markdown("""
     border:1px solid #e2e6ff;
     margin-bottom:10px;
 }
-
 </style>
 
 """, unsafe_allow_html=True)
@@ -99,7 +91,6 @@ donor_indices = [d[0] for d in donors]
 
 BL, BA = compute_descriptors(coords, co_index, donor_indices)
 
-
 # --------------------------------------------------
 # Detected donors
 # --------------------------------------------------
@@ -118,7 +109,6 @@ df = pd.DataFrame(donor_table)
 
 st.dataframe(df, use_container_width=True)
 
-
 # --------------------------------------------------
 # Confirmation
 # --------------------------------------------------
@@ -132,17 +122,9 @@ confirm = st.radio(
 
 run_prediction = False
 
-
-# --------------------------------------------------
-# If donors are correct
-# --------------------------------------------------
 if confirm == "Yes":
     run_prediction = True
 
-
-# --------------------------------------------------
-# Manual donor selection
-# --------------------------------------------------
 elif confirm == "No":
 
     manual = st.text_input(
@@ -162,7 +144,6 @@ elif confirm == "No":
             donor_table = []
 
             for i, d in enumerate(donor_indices):
-
                 donor_table.append({
                     "Donor atom index": d + 1,
                     "Atom": atoms[d],
@@ -183,7 +164,6 @@ elif confirm == "No":
         except:
             st.error("Invalid atom indices. Please enter valid numbers.")
 
-
 # --------------------------------------------------
 # Run prediction
 # --------------------------------------------------
@@ -202,7 +182,6 @@ if run_prediction:
     gx = model_gx.predict(X)[0]
     gy = model_gy.predict(X)[0]
     gz = model_gz.predict(X)[0]
-
 
     # --------------------------------------------------
     # Results
