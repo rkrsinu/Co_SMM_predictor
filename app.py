@@ -5,11 +5,11 @@ import pandas as pd
 
 from descriptor_utils import read_xyz, find_donors, compute_descriptors
 
-# -----------------------------
+# --------------------------------------------------
 
 # Page configuration
 
-# -----------------------------
+# --------------------------------------------------
 
 st.set_page_config(
 page_title="Co Magnetic Predictor",
@@ -17,16 +17,16 @@ layout="centered",
 page_icon="🧲"
 )
 
-# -----------------------------
+# --------------------------------------------------
 
-# Custom styling
+# Custom CSS styling
 
-# -----------------------------
+# --------------------------------------------------
 
-st.markdown(
-"""
+st.markdown("""
 
 <style>
+
 .title-box{
     background: linear-gradient(90deg,#3a7bd5,#00d2ff);
     padding:18px;
@@ -44,17 +44,16 @@ st.markdown(
     border:1px solid #e2e6ff;
     margin-bottom:10px;
 }
+
 </style>
 
-""",
-unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
 
-# -----------------------------
+# --------------------------------------------------
 
 # Title
 
-# -----------------------------
+# --------------------------------------------------
 
 st.markdown(
 '<div class="title-box">Three Coordinate Co(II) Magnetic Anisotropy Predictor</div>',
@@ -63,11 +62,11 @@ unsafe_allow_html=True
 
 st.write("")
 
-# -----------------------------
+# --------------------------------------------------
 
 # Model uncertainties
 
-# -----------------------------
+# --------------------------------------------------
 
 ERR_D = 12.5
 ERR_ED = 0.05
@@ -75,11 +74,11 @@ ERR_gx = 0.08
 ERR_gy = 0.09
 ERR_gz = 0.10
 
-# -----------------------------
+# --------------------------------------------------
 
 # Upload structure
 
-# -----------------------------
+# --------------------------------------------------
 
 st.markdown("### 📂 Upload XYZ Structure")
 
@@ -100,30 +99,29 @@ donor_indices = [d[0] for d in donors]
 
 BL, BA = compute_descriptors(coords, co_index, donor_indices)
 
-# -----------------------------
+
+# --------------------------------------------------
 # Detected donors
-# -----------------------------
+# --------------------------------------------------
 st.markdown("### 🧪 Detected Donor Atoms")
 
 donor_table = []
 
 for i, d in enumerate(donor_indices):
-    donor_table.append(
-        {
-            "Donor atom index": d + 1,
-            "Atom": atoms[d],
-            "Co–L bond length (Å)": round(BL[i], 3)
-        }
-    )
+    donor_table.append({
+        "Donor atom index": d + 1,
+        "Atom": atoms[d],
+        "Co–L bond length (Å)": round(BL[i], 3)
+    })
 
 df = pd.DataFrame(donor_table)
 
 st.dataframe(df, use_container_width=True)
 
 
-# -----------------------------
+# --------------------------------------------------
 # Confirmation
-# -----------------------------
+# --------------------------------------------------
 st.markdown("### ✔ Confirm Donor Atoms")
 
 confirm = st.radio(
@@ -135,16 +133,16 @@ confirm = st.radio(
 run_prediction = False
 
 
-# -----------------------------
+# --------------------------------------------------
 # If donors are correct
-# -----------------------------
+# --------------------------------------------------
 if confirm == "Yes":
     run_prediction = True
 
 
-# -----------------------------
+# --------------------------------------------------
 # Manual donor selection
-# -----------------------------
+# --------------------------------------------------
 elif confirm == "No":
 
     manual = st.text_input(
@@ -165,13 +163,11 @@ elif confirm == "No":
 
             for i, d in enumerate(donor_indices):
 
-                donor_table.append(
-                    {
-                        "Donor atom index": d + 1,
-                        "Atom": atoms[d],
-                        "Co–L bond length (Å)": round(BL[i], 3)
-                    }
-                )
+                donor_table.append({
+                    "Donor atom index": d + 1,
+                    "Atom": atoms[d],
+                    "Co–L bond length (Å)": round(BL[i], 3)
+                })
 
             st.dataframe(pd.DataFrame(donor_table), use_container_width=True)
 
@@ -188,9 +184,9 @@ elif confirm == "No":
             st.error("Invalid atom indices. Please enter valid numbers.")
 
 
-# -----------------------------
+# --------------------------------------------------
 # Run prediction
-# -----------------------------
+# --------------------------------------------------
 if run_prediction:
 
     X = np.array([[BL[0], BL[1], BL[2], BA[0], BA[1], BA[2]]])
@@ -207,34 +203,30 @@ if run_prediction:
     gy = model_gy.predict(X)[0]
     gz = model_gz.predict(X)[0]
 
-    # -----------------------------
+
+    # --------------------------------------------------
     # Results
-    # -----------------------------
+    # --------------------------------------------------
     st.markdown("### 🧲 Predicted Magnetic Parameters")
 
-    results = pd.DataFrame(
-        {
-            "Parameter": ["D", "E/D", "gx", "gy", "gz"],
-            "Prediction": [
-                f"{round(D,3)} ± {ERR_D}",
-                f"{round(ED,4)} ± {ERR_ED}",
-                f"{round(gx,3)} ± {ERR_gx}",
-                f"{round(gy,3)} ± {ERR_gy}",
-                f"{round(gz,3)} ± {ERR_gz}"
-            ],
-        }
-    )
+    results = pd.DataFrame({
+        "Parameter": ["D", "E/D", "gx", "gy", "gz"],
+        "Prediction": [
+            f"{round(D,3)} ± {ERR_D}",
+            f"{round(ED,4)} ± {ERR_ED}",
+            f"{round(gx,3)} ± {ERR_gx}",
+            f"{round(gy,3)} ± {ERR_gy}",
+            f"{round(gz,3)} ± {ERR_gz}"
+        ]
+    })
 
     st.success("Prediction completed successfully!")
 
     st.dataframe(results, use_container_width=True)
 
-    st.caption(
-        "Prediction uncertainty corresponds to model MAE on the test dataset."
-    )
+    st.caption("Prediction uncertainty corresponds to model MAE on the test dataset.")
 
     st.markdown(
-        "📄 For more details visit: "
-        "[https://doi.org/10.26434/chemrxiv-2024-97555](https://doi.org/10.26434/chemrxiv-2024-97555)"
+        "📄 For more details visit: https://doi.org/10.26434/chemrxiv-2024-97555"
     )
 ```
