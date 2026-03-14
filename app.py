@@ -8,7 +8,7 @@ from descriptor_utils import read_xyz, find_donors, compute_descriptors
 st.set_page_config(page_title="Co Magnetic Predictor", layout="centered")
 st.title("Co(II) Magnetic Property Predictor")
 
-ERR_D = 3.5
+ERR_D = 12.5
 ERR_ED = 0.02
 ERR_gx = 0.04
 ERR_gy = 0.05
