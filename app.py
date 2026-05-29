@@ -260,5 +260,5 @@ if uploaded_file is not None:
 
         st.markdown(
             "For more details visit: "
-            "[https://doi.org/10.26434/chemrxiv-2024-97555](https://doi.org/10.26434/chemrxiv-2024-97555)"
+            "[https://pubs.acs.org/doi/full/10.1021/acs.inorgchem.6c01031](https://pubs.acs.org/doi/full/10.1021/acs.inorgchem.6c01031)"
         )
