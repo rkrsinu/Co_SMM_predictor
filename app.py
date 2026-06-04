@@ -17,6 +17,24 @@ st.set_page_config(
 st.title("Three Coordinate Co(II) Magnetic Anisotropy Predictor")
 
 # ==========================================================
+# RF uncertainty function
+# ==========================================================
+
+def predict_with_uncertainty(model, X):
+
+    tree_predictions = np.array([
+        tree.predict(X)[0]
+        for tree in model.estimators_
+    ])
+
+    prediction = np.mean(tree_predictions)
+
+    uncertainty = np.std(tree_predictions)
+
+    return prediction, uncertainty
+
+
+# ==========================================================
 # Upload XYZ
 # ==========================================================
 
@@ -58,7 +76,7 @@ if uploaded_file is not None:
         ]])
 
         # ==================================================
-        # Load trained models
+        # Load models
         # ==================================================
 
         model_D = joblib.load(
@@ -82,24 +100,41 @@ if uploaded_file is not None:
         )
 
         # ==================================================
-        # Predictions
+        # Predictions with uncertainty
         # ==================================================
 
-        D = model_D.predict(X)[0]
+        D, ERR_D = predict_with_uncertainty(
+            model_D,
+            X
+        )
 
-        ED = model_ED.predict(X)[0]
+        ED, ERR_ED = predict_with_uncertainty(
+            model_ED,
+            X
+        )
 
-        gx = model_gx.predict(X)[0]
+        gx, ERR_gx = predict_with_uncertainty(
+            model_gx,
+            X
+        )
 
-        gy = model_gy.predict(X)[0]
+        gy, ERR_gy = predict_with_uncertainty(
+            model_gy,
+            X
+        )
 
-        gz = model_gz.predict(X)[0]
+        gz, ERR_gz = predict_with_uncertainty(
+            model_gz,
+            X
+        )
 
         # ==================================================
-        # Display results
+        # Results
         # ==================================================
 
-        st.subheader("Predicted Magnetic Parameters")
+        st.subheader(
+            "Predicted Magnetic Parameters"
+        )
 
         results = pd.DataFrame({
 
@@ -112,11 +147,16 @@ if uploaded_file is not None:
             ],
 
             "Prediction": [
-                f"{D:.3f}",
-                f"{ED:.4f}",
-                f"{gx:.3f}",
-                f"{gy:.3f}",
-                f"{gz:.3f}"
+
+                f"{D:.2f} ± {ERR_D:.2f}",
+
+                f"{ED:.4f} ± {ERR_ED:.4f}",
+
+                f"{gx:.3f} ± {ERR_gx:.3f}",
+
+                f"{gy:.3f} ± {ERR_gy:.3f}",
+
+                f"{gz:.3f} ± {ERR_gz:.3f}"
             ]
         })
 
